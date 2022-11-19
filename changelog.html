@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="/Merq/assets/css/style.css?v=a65561d5618d26adbd5bd4e7591a207cd4365a09">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Changelog | Merq</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Changelog" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Internal application architecture via command and event messages" />
+<meta property="og:description" content="Internal application architecture via command and event messages" />
+<meta property="og:site_name" content="Merq" />
+<script type="application/ld+json">
+{"@type":"WebPage","headline":"Changelog","url":"/Merq/changelog.html","description":"Internal application architecture via command and event messages","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/devlooped/Merq">View on GitHub</a>
+
+          <h1 id="project_title">Merq</h1>
+          <h2 id="project_tagline">Internal application architecture via command and event messages</h2>
+
+          
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1 id="changelog">Changelog</h1>
+
+<h2 id="v200-beta3-2022-11-19"><a href="https://github.com/devlooped/Merq/tree/v2.0.0-beta.3">v2.0.0-beta.3</a> (2022-11-19)</h2>
+
+<p><a href="https://github.com/devlooped/Merq/compare/v2.0.0-beta.2...v2.0.0-beta.3">Full Changelog</a></p>
+
+<p>:sparkles: Implemented enhancements:</p>
+
+<ul>
+  <li>Add exception telemetry recording <a href="https://github.com/devlooped/Merq/issues/76">#76</a></li>
+  <li>Add basic telemetry support in core message bus implementation  <a href="https://github.com/devlooped/Merq/issues/73">#73</a></li>
+  <li>Issue a warning for non-public commands <a href="https://github.com/devlooped/Merq/issues/71">#71</a></li>
+  <li>Issue a warning for non-public commands <a href="https://github.com/devlooped/Merq/pull/72">#72</a> (@kzu)</li>
+</ul>
+
+<p>:twisted_rightwards_arrows: Merged:</p>
+
+<ul>
+  <li>Set activity status to error when an exception is recorded <a href="https://github.com/devlooped/Merq/pull/78">#78</a> (@kzu)</li>
+  <li>Add basic telemetry support in core message bus implementation <a href="https://github.com/devlooped/Merq/pull/74">#74</a> (@kzu)</li>
+</ul>
+
+<h2 id="v200-beta2-2022-11-18"><a href="https://github.com/devlooped/Merq/tree/v2.0.0-beta.2">v2.0.0-beta.2</a> (2022-11-18)</h2>
+
+<p><a href="https://github.com/devlooped/Merq/compare/v2.0.0-alpha...v2.0.0-beta.2">Full Changelog</a></p>
+
+<p>:sparkles: Implemented enhancements:</p>
+
+<ul>
+  <li>Fix support for non-void command handlers in duck typing <a href="https://github.com/devlooped/Merq/issues/69">#69</a></li>
+</ul>
+
+<h2 id="v200-alpha-2022-11-16"><a href="https://github.com/devlooped/Merq/tree/v2.0.0-alpha">v2.0.0-alpha</a> (2022-11-16)</h2>
+
+<p><a href="https://github.com/devlooped/Merq/compare/v1.3.0...v2.0.0-alpha">Full Changelog</a></p>
+
+<p>:sparkles: Implemented enhancements:</p>
+
+<ul>
+  <li>Make duck-typing support pluggable with no built-in implementation <a href="https://github.com/devlooped/Merq/issues/57">#57</a></li>
+  <li>Add support for dynamic record creation including list-like properties <a href="https://github.com/devlooped/Merq/issues/49">#49</a></li>
+  <li>Support hierarchical record creation from generated dynamic factory   <a href="https://github.com/devlooped/Merq/issues/47">#47</a></li>
+  <li>Provide analyzer + code fix for turning sync command to async and viceversa <a href="https://github.com/devlooped/Merq/issues/38">#38</a></li>
+  <li>Provide analyzers + code fixes for common command authoring errors  <a href="https://github.com/devlooped/Merq/issues/37">#37</a></li>
+  <li>Add support for duck typing of commands <a href="https://github.com/devlooped/Merq/issues/33">#33</a></li>
+  <li>Add support for duck typing on events <a href="https://github.com/devlooped/Merq/issues/31">#31</a></li>
+  <li>Allow derived message bus implementation to monitor used event contracts <a href="https://github.com/devlooped/Merq/issues/19">#19</a></li>
+</ul>
+
+<p>:hammer: Other:</p>
+
+<ul>
+  <li>Upgrade to centrally managed package versions <a href="https://github.com/devlooped/Merq/issues/51">#51</a></li>
+  <li>Add unit tests for analyzers <a href="https://github.com/devlooped/Merq/issues/45">#45</a></li>
+</ul>
+
+<p>:twisted_rightwards_arrows: Merged:</p>
+
+<ul>
+  <li>Add pages and oss artifacts <a href="https://github.com/devlooped/Merq/pull/62">#62</a> (@kzu)</li>
+  <li>Update to modern color <a href="https://github.com/devlooped/Merq/pull/61">#61</a> (@kzu)</li>
+  <li>Make duck-typing support pluggable <a href="https://github.com/devlooped/Merq/pull/60">#60</a> (@kzu)</li>
+  <li>Upgrade to centrally managed package versions <a href="https://github.com/devlooped/Merq/pull/52">#52</a> (@kzu)</li>
+  <li>Add support for collections in dynamic record creation factories <a href="https://github.com/devlooped/Merq/pull/50">#50</a> (@kzu)</li>
+  <li>Add support for hierarchical record creation from generated factories <a href="https://github.com/devlooped/Merq/pull/48">#48</a> (@kzu)</li>
+  <li>Add comprehensive tests for analyzers and code fixes <a href="https://github.com/devlooped/Merq/pull/46">#46</a> (@kzu)</li>
+  <li>Provide analyzer + code fix for turning sync command to async and viceversa <a href="https://github.com/devlooped/Merq/pull/39">#39</a> (@kzu)</li>
+  <li>Support sync/async execute fixer on returning commands too <a href="https://github.com/devlooped/Merq/pull/35">#35</a> (@kzu)</li>
+  <li>Duck typing of events and commands <a href="https://github.com/devlooped/Merq/pull/34">#34</a> (@kzu)</li>
+  <li>Allow derived message bus implementation to monitor used event contracts <a href="https://github.com/devlooped/Merq/pull/20">#20</a> (@kzu)</li>
+  <li>Unified IMessageBus interface <a href="https://github.com/devlooped/Merq/pull/16">#16</a> (@kzu)</li>
+  <li>Add dynamic OS matrix <a href="https://github.com/devlooped/Merq/pull/15">#15</a> (@kzu)</li>
+</ul>
+
+<h2 id="v130-2022-07-28"><a href="https://github.com/devlooped/Merq/tree/v1.3.0">v1.3.0</a> (2022-07-28)</h2>
+
+<p><a href="https://github.com/devlooped/Merq/compare/v1.2.0-beta...v1.3.0">Full Changelog</a></p>
+
+<p>:sparkles: Implemented enhancements:</p>
+
+<ul>
+  <li>Introduce IMessageBus unifying interface for Commands+Events <a href="https://github.com/devlooped/Merq/issues/5">#5</a></li>
+</ul>
+
+<p>:twisted_rightwards_arrows: Merged:</p>
+
+<ul>
+  <li>Docs and packaging improvements <a href="https://github.com/devlooped/Merq/pull/7">#7</a> (@kzu)</li>
+  <li>Introduce IMessageBus unifying interface for Commands+Events <a href="https://github.com/devlooped/Merq/pull/6">#6</a> (@kzu)</li>
+</ul>
+
+<h2 id="v120-beta-2022-07-20"><a href="https://github.com/devlooped/Merq/tree/v1.2.0-beta">v1.2.0-beta</a> (2022-07-20)</h2>
+
+<p><a href="https://github.com/devlooped/Merq/compare/v1.2.0-alpha...v1.2.0-beta">Full Changelog</a></p>
+
+<p>:twisted_rightwards_arrows: Merged:</p>
+
+<ul>
+  <li>Ensure we strong-name the assemblies with the previous key <a href="https://github.com/devlooped/Merq/pull/4">#4</a> (@kzu)</li>
+</ul>
+
+<h2 id="v120-alpha-2022-07-16"><a href="https://github.com/devlooped/Merq/tree/v1.2.0-alpha">v1.2.0-alpha</a> (2022-07-16)</h2>
+
+<p><a href="https://github.com/devlooped/Merq/compare/9aed78c8a37c830093a8dbeb15981df3640dd350...v1.2.0-alpha">Full Changelog</a></p>
+
+<p>* <em>This Changelog was automatically generated by <a href="https://github.com/github-changelog-generator/github-changelog-generator">github_changelog_generator</a></em></p>
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        
+        <p class="copyright">Merq maintained by <a href="https://github.com/devlooped">devlooped</a></p>
+        
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+  </body>
+</html>
