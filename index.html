@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,maximum-scale=2">
+    <link rel="stylesheet" type="text/css" media="screen" href="/Merq/assets/css/style.css?v=e62b7c3f75ee02694a40428b552eee3c7bc63a5f">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Merq | Internal application architecture via command and event messages</title>
+<meta name="generator" content="Jekyll v3.9.0" />
+<meta property="og:title" content="Merq" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Internal application architecture via command and event messages" />
+<meta property="og:description" content="Internal application architecture via command and event messages" />
+<meta property="og:site_name" content="Merq" />
+<script type="application/ld+json">
+{"url":"/Merq/","@type":"WebSite","description":"Internal application architecture via command and event messages","headline":"Merq","name":"Merq","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/devlooped/Merq">View on GitHub</a>
+
+          <h1 id="project_title">Merq</h1>
+          <h2 id="project_tagline">Internal application architecture via command and event messages</h2>
+
+          
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1 id="-merq"><img src="https://raw.github.com/devlooped/Merq/main/assets/img/32.png" alt="Icon" /> Merq</h1>
+
+<p><a href="https://www.nuget.org/packages/Merq"><img src="https://img.shields.io/nuget/vpre/Merq.svg?color=royalblue" alt="Version" /></a>
+<a href="https://www.nuget.org/packages/Merq"><img src="https://img.shields.io/nuget/dt/Merq.svg?color=green" alt="Downloads" /></a>
+<a href="https://github.com/devlooped/Merq/blob/main/license.txt"><img src="https://img.shields.io/github/license/devlooped/Merq.svg?color=blue" alt="License" /></a></p>
+
+<!-- #core -->
+<blockquote>
+  <p><strong>Mercury:</strong> messenger of the Roman gods</p>
+</blockquote>
+
+<blockquote>
+  <p><em>Mercury</em> &gt; <em>Merq-ry</em> &gt; <strong>Merq</strong></p>
+</blockquote>
+
+<p><strong>Merq</strong> brings the <a href="https://docs.microsoft.com/en-us/previous-versions/msp-n-p/ff647328(v=pandp.10)">Message Bus</a> pattern together with 
+a <a href="https://www.martinfowler.com/bliki/CommandOrientedInterface.html">command-oriented interface</a> for an 
+extensible and decoupled in-process application architecture.</p>
+
+<p>These patterns are well established in microservices and service oriented 
+architectures, but their benefits can be applied to apps too, especially 
+extensible ones where multiple teams can contribute extensions which 
+are composed at run-time.</p>
+
+<p>The resulting improved decoupling between components makes it easier to evolve 
+them independently, while improving discoverability of available commands and 
+events. You can see this approach applied in the real world in 
+<a href="https://code.visualstudio.com/api/extension-guides/command">VSCode commands</a> 
+and various events such as <a href="https://code.visualstudio.com/api/references/vscode-api#window">window events</a>. 
+Clearly, in the case of VSCode, everything is in-process, but the benefits of 
+a clean and predictable API are pretty obvious.</p>
+
+<p><em>Merq</em> provides the same capabilities for .NET apps.</p>
+
+<h2 id="events">Events</h2>
+
+<p>Events can be any type, there is no restriction or interfaces you must implement.
+Nowadays, <a href="https://docs.microsoft.com/en-us/dotnet/csharp/fundamentals/types/records">C# record types</a> 
+are a perfect fit for event data types. An example event could be a one-liner such as:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">record</span> <span class="nf">ItemShipped</span><span class="p">(</span><span class="kt">string</span> <span class="n">Id</span><span class="p">,</span> <span class="n">DateTimeOffset</span> <span class="n">Date</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The events-based API surface on the message bus is simple enough:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">IMessageBus</span>
+<span class="p">{</span>
+    <span class="k">void</span> <span class="n">Notify</span><span class="p">&lt;</span><span class="n">TEvent</span><span class="p">&gt;(</span><span class="n">TEvent</span> <span class="n">e</span><span class="p">);</span>
+    <span class="n">IObservable</span><span class="p">&lt;</span><span class="n">TEvent</span><span class="p">&gt;</span> <span class="n">Observe</span><span class="p">&lt;</span><span class="n">TEvent</span><span class="p">&gt;();</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>By relying on <code class="language-plaintext highlighter-rouge">IObservable&lt;TEvent&gt;</code>, <em>Merq</em> integrates seamlessly with 
+more powerful event-driven handling via <a href="http://nuget.org/packages/system.reactive">System.Reactive</a> 
+or the more lightweight <a href="https://www.nuget.org/packages/RxFree">RxFree</a>.
+Subscribing to events with either of those packages is trivial:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IDisposable</span> <span class="n">subscription</span><span class="p">;</span>
+
+<span class="c1">// constructor may use DI to get the dependency</span>
+<span class="k">public</span> <span class="nf">CustomerViewModel</span><span class="p">(</span><span class="n">IMessageBus</span> <span class="n">bus</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="n">subscription</span> <span class="p">=</span> <span class="n">bus</span><span class="p">.</span><span class="n">Observe</span><span class="p">&lt;</span><span class="n">ItemShipped</span><span class="p">&gt;().</span><span class="nf">Subscribe</span><span class="p">(</span><span class="n">OnItemShipped</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">void</span> <span class="nf">OnItemShipped</span><span class="p">(</span><span class="n">ItemShipped</span> <span class="n">e</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="c1">// Refresh item status</span>
+
+<span class="k">public</span> <span class="k">void</span> <span class="nf">Dispose</span><span class="p">()</span> <span class="p">=&gt;</span> <span class="n">subscription</span><span class="p">.</span><span class="nf">Dispose</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>In addition to event producers just invoking <code class="language-plaintext highlighter-rouge">Notify</code>, they can also be 
+implemented as <code class="language-plaintext highlighter-rouge">IObservable&lt;TEvent&gt;</code> directly, which is useful when the
+producer is itself an observable sequence.</p>
+
+<p>Both features integrate seamlessly and leverage all the power of 
+<a href="https://github.com/dotnet/reactive">Reactive Extensions</a>.</p>
+
+<h2 id="commands">Commands</h2>
+
+<p>Commands can also be any type, and C# records make for concise definitions:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">record</span> <span class="nf">CancelOrder</span><span class="p">(</span><span class="kt">string</span> <span class="n">OrderId</span><span class="p">)</span> <span class="p">:</span> <span class="n">IAsyncCommand</span><span class="p">;</span>
+</code></pre></div></div>
+
+<p>Unlike events, command messages need to signal the invocation style they require 
+for execution:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>Scenario</th>
+      <th>Interface</th>
+      <th>Invocation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>void synchronous command</td>
+      <td><code class="language-plaintext highlighter-rouge">ICommand</code></td>
+      <td><code class="language-plaintext highlighter-rouge">IMessageBus.Execute(command)</code></td>
+    </tr>
+    <tr>
+      <td>value-returning synchronous command</td>
+      <td><code class="language-plaintext highlighter-rouge">ICommand&lt;TResult&gt;</code></td>
+      <td><code class="language-plaintext highlighter-rouge">var result = await IMessageBus.Execute(command)</code></td>
+    </tr>
+    <tr>
+      <td>void asynchronous command</td>
+      <td><code class="language-plaintext highlighter-rouge">IAsyncCommand</code></td>
+      <td><code class="language-plaintext highlighter-rouge">await IMessageBus.ExecuteAsync(command)</code></td>
+    </tr>
+    <tr>
+      <td>value-returning asynchronous command</td>
+      <td><code class="language-plaintext highlighter-rouge">IAsyncCommand&lt;TResult&gt;</code></td>
+      <td><code class="language-plaintext highlighter-rouge">var result = await IMessageBus.ExecuteAsync(command)</code></td>
+    </tr>
+    <tr>
+      <td>async stream command</td>
+      <td><code class="language-plaintext highlighter-rouge">IStreamCommand&lt;TResult&gt;</code></td>
+      <td><code class="language-plaintext highlighter-rouge">await foreach(var item in IMessageBus.ExecuteStream(command))</code></td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The sample command shown before can be executed using the following code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// perhaps a method invoked when a user </span>
+<span class="c1">// clicks/taps a Cancel button next to an order</span>
+<span class="k">async</span> <span class="n">Task</span> <span class="nf">OnCancel</span><span class="p">(</span><span class="kt">string</span> <span class="n">orderId</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">await</span> <span class="n">bus</span><span class="p">.</span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="k">new</span> <span class="nf">CancelOrder</span><span class="p">(</span><span class="n">orderId</span><span class="p">),</span> <span class="n">CancellationToken</span><span class="p">.</span><span class="n">None</span><span class="p">);</span>
+    <span class="c1">// refresh UI for new state.</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>An example of a synchronous command could be:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// Command declaration</span>
+<span class="n">record</span> <span class="nf">SignOut</span><span class="p">()</span> <span class="p">:</span> <span class="n">ICommand</span><span class="p">;</span>
+
+<span class="c1">// Command invocation</span>
+<span class="k">void</span> <span class="nf">OnSignOut</span><span class="p">()</span> <span class="p">=&gt;</span> <span class="n">bus</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">new</span> <span class="nf">SignOut</span><span class="p">());</span>
+
+<span class="c1">// or alternatively, for void commands that have no additional data:</span>
+<span class="k">void</span> <span class="nf">OnSignOut</span><span class="p">()</span> <span class="p">=&gt;</span> <span class="n">bus</span><span class="p">.</span><span class="n">Execute</span><span class="p">&lt;</span><span class="n">SignOut</span><span class="p">&gt;();</span>
+</code></pre></div></div>
+
+<p>The marker interfaces on the command messages drive the compiler to only allow 
+the right invocation style on the message bus, as defined by the command author:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">interface</span> <span class="nc">IMessageBus</span>
+<span class="p">{</span>
+    <span class="c1">// sync void</span>
+    <span class="k">void</span> <span class="nf">Execute</span><span class="p">(</span><span class="n">ICommand</span> <span class="n">command</span><span class="p">);</span>
+    <span class="c1">// sync value-returning</span>
+    <span class="n">TResult</span> <span class="n">Execute</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;(</span><span class="n">ICommand</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span> <span class="n">command</span><span class="p">);</span>
+    <span class="c1">// async void</span>
+    <span class="n">Task</span> <span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">IAsyncCommand</span> <span class="n">command</span><span class="p">,</span> <span class="n">CancellationToken</span> <span class="n">cancellation</span><span class="p">);</span>
+    <span class="c1">// async value-returning</span>
+    <span class="n">Task</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span> <span class="n">ExecuteAsync</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;(</span><span class="n">IAsyncCommand</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span> <span class="n">command</span><span class="p">,</span> <span class="n">CancellationToken</span> <span class="n">cancellation</span><span class="p">);</span>
+    <span class="c1">// async stream</span>
+    <span class="n">IAsyncEnumerable</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span> <span class="n">ExecuteStream</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;(</span><span class="n">IStreamCommand</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span> <span class="n">command</span><span class="p">,</span> <span class="n">CancellationToken</span> <span class="n">cancellation</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>For example, to create a value-returning async command that retrieves some 
+value, you would have:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">record</span> <span class="nf">FindDocuments</span><span class="p">(</span><span class="kt">string</span> <span class="n">Filter</span><span class="p">)</span> <span class="p">:</span> <span class="n">IAsyncCommand</span><span class="p">&lt;</span><span class="n">IEnumerable</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;&gt;;</span>
+
+<span class="k">class</span> <span class="nc">FindDocumentsHandler</span> <span class="p">:</span> <span class="n">IAsyncCommandHandler</span><span class="p">&lt;</span><span class="n">FindDocument</span><span class="p">,</span> <span class="n">IEnumerable</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;&gt;</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="nf">CanExecute</span><span class="p">(</span><span class="n">FindDocument</span> <span class="n">command</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">command</span><span class="p">.</span><span class="n">Filter</span><span class="p">);</span>
+    
+    <span class="k">public</span> <span class="n">Task</span><span class="p">&lt;</span><span class="n">IEnumerable</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;&gt;</span> <span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">FindDocument</span> <span class="n">command</span><span class="p">,</span> <span class="n">CancellationToken</span> <span class="n">cancellation</span><span class="p">)</span>
+        <span class="p">=&gt;</span> <span class="c1">// evaluate command.Filter across all documents and return matches</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In order to execute such command, the only execute method the compiler will allow 
+is:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">IEnumerable</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="n">files</span> <span class="p">=</span> <span class="k">await</span> <span class="n">bus</span><span class="p">.</span><span class="nf">ExecuteAsync</span><span class="p">(</span><span class="k">new</span> <span class="nf">FindDocuments</span><span class="p">(</span><span class="s">"*.json"</span><span class="p">));</span>
+</code></pre></div></div>
+
+<p>If the consumer tries to use <code class="language-plaintext highlighter-rouge">Execute</code>, the compiler will complain that the 
+command does not implement <code class="language-plaintext highlighter-rouge">ICommand&lt;TResult&gt;</code>, which is the synchronous version 
+of the marker interface.</p>
+
+<p>While these marker interfaces on the command messages might seem unnecessary, 
+they are actually quite important. They solve a key problem that execution
+abstractions face: whether a command execution is synchronous or asynchronous 
+(as well as void or value-returning) should <em>not</em> be abstracted away since 
+otherwise you can end up in two common anti-patterns (i.e. <a href="https://github.com/davidfowl/AspNetCoreDiagnosticScenarios/blob/master/AsyncGuidance.md">async guidelines for ASP.NET</a>), 
+known as <a href="https://devblogs.microsoft.com/pfxteam/should-i-expose-synchronous-wrappers-for-asynchronous-methods/">sync over async</a> and 
+<a href="https://devblogs.microsoft.com/pfxteam/should-i-expose-asynchronous-wrappers-for-synchronous-methods/">async over sync</a>.</p>
+
+<p>Likewise, mistakes cannot be made when implementing the handler, since the 
+handler interfaces define constraints on what the commands must implement:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// sync</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">ICommandHandler</span><span class="p">&lt;</span><span class="k">in</span> <span class="n">TCommand</span><span class="p">&gt;</span> <span class="p">:</span> <span class="p">...</span> <span class="k">where</span> <span class="n">TCommand</span> <span class="p">:</span> <span class="n">ICommand</span><span class="p">;</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">ICommandHandler</span><span class="p">&lt;</span><span class="k">in</span> <span class="n">TCommand</span><span class="p">,</span> <span class="k">out</span> <span class="n">TResult</span><span class="p">&gt;</span> <span class="p">:</span> <span class="p">...</span> <span class="k">where</span> <span class="n">TCommand</span> <span class="p">:</span> <span class="n">ICommand</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;;</span>
+
+<span class="c1">// async</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">IAsyncCommandHandler</span><span class="p">&lt;</span><span class="k">in</span> <span class="n">TCommand</span><span class="p">&gt;</span> <span class="p">:</span> <span class="p">...</span> <span class="k">where</span> <span class="n">TCommand</span> <span class="p">:</span> <span class="n">IAsyncCommand</span><span class="p">;</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">IAsyncCommandHandler</span><span class="p">&lt;</span><span class="k">in</span> <span class="n">TCommand</span><span class="p">,</span> <span class="n">TResult</span><span class="p">&gt;</span> <span class="p">:</span> <span class="p">...</span> <span class="k">where</span> <span class="n">TCommand</span> <span class="p">:</span> <span class="n">IAsyncCommand</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span>
+
+<span class="c1">// async stream</span>
+<span class="k">public</span> <span class="k">interface</span> <span class="nc">IStreamCommandHandler</span><span class="p">&lt;</span><span class="k">in</span> <span class="n">TCommand</span><span class="p">,</span> <span class="k">out</span> <span class="n">TResult</span><span class="p">&gt;:</span> <span class="p">...</span> <span class="k">where</span> <span class="n">TCommand</span> <span class="p">:</span> <span class="n">IStreamCommand</span><span class="p">&lt;</span><span class="n">TResult</span><span class="p">&gt;</span>
+</code></pre></div></div>
+
+<p>This design choice also makes it impossible to end up executing a command
+implementation improperly.</p>
+
+<p>In addition to execution, the <code class="language-plaintext highlighter-rouge">IMessageBus</code> also provides a mechanism to determine 
+if a command has a registered handler at all via the <code class="language-plaintext highlighter-rouge">CanHandle&lt;T&gt;</code> method as well 
+as a validation mechanism via <code class="language-plaintext highlighter-rouge">CanExecute&lt;T&gt;</code>, as shown above in the <code class="language-plaintext highlighter-rouge">FindDocumentsHandler</code> example.</p>
+
+<p>Commands can notify new events, and event observers/subscribers can in turn 
+execute commands.</p>
+
+<h3 id="async-streams">Async Streams</h3>
+
+<p>For .NET6+ apps, <em>Merq</em> also supports <a href="https://learn.microsoft.com/en-us/dotnet/csharp/asynchronous-programming/generate-consume-asynchronous-stream">async streams</a> 
+as a command invocation style. This is useful for scenarios where the command
+execution produces a potentially large number of results, and the consumer
+wants to process them as they are produced, rather than waiting for the entire
+sequence to be produced.</p>
+
+<p>For example, the filter documents command above could be implemented as an 
+async stream command instead:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">record</span> <span class="nf">FindDocuments</span><span class="p">(</span><span class="kt">string</span> <span class="n">Filter</span><span class="p">)</span> <span class="p">:</span> <span class="n">IStreamCommand</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;;</span>
+
+<span class="k">class</span> <span class="nc">FindDocumentsHandler</span> <span class="p">:</span> <span class="n">IStreamCommandHandler</span><span class="p">&lt;</span><span class="n">FindDocument</span><span class="p">,</span> <span class="kt">string</span><span class="p">&gt;</span>
+<span class="p">{</span>
+    <span class="k">public</span> <span class="kt">bool</span> <span class="nf">CanExecute</span><span class="p">(</span><span class="n">FindDocument</span> <span class="n">command</span><span class="p">)</span> <span class="p">=&gt;</span> <span class="p">!</span><span class="kt">string</span><span class="p">.</span><span class="nf">IsNullOrEmpty</span><span class="p">(</span><span class="n">command</span><span class="p">.</span><span class="n">Filter</span><span class="p">);</span>
+    
+    <span class="k">public</span> <span class="k">async</span> <span class="n">IAsyncEnumerable</span><span class="p">&lt;</span><span class="kt">string</span><span class="p">&gt;</span> <span class="nf">ExecuteAsync</span><span class="p">(</span><span class="n">FindDocument</span> <span class="n">command</span><span class="p">,</span> <span class="p">[</span><span class="n">EnumeratorCancellation</span><span class="p">]</span> <span class="n">CancellationToken</span> <span class="n">cancellation</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="k">await</span> <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">file</span> <span class="k">in</span> <span class="nf">FindFilesAsync</span><span class="p">(</span><span class="n">command</span><span class="p">.</span><span class="n">Filter</span><span class="p">,</span> <span class="n">cancellation</span><span class="p">))</span>
+            <span class="k">yield</span> <span class="k">return</span> <span class="n">file</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>In order to execute such command, the only execute method the compiler will allow 
+is:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">await</span> <span class="k">foreach</span> <span class="p">(</span><span class="kt">var</span> <span class="n">file</span> <span class="k">in</span> <span class="n">bus</span><span class="p">.</span><span class="nf">ExecuteStream</span><span class="p">(</span><span class="k">new</span> <span class="nf">FindDocuments</span><span class="p">(</span><span class="s">"*.json"</span><span class="p">)))</span>
+    <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="n">file</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h2 id="analyzers-and-code-fixes">Analyzers and Code Fixes</h2>
+
+<p>Beyond the compiler complaining, <em>Merq</em> also provides a set of analyzers and 
+code fixes to learn the patterns and avoid common mistakes. For example, if you
+created a simple record to use as a command, such as:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="n">record</span> <span class="nf">Echo</span><span class="p">(</span><span class="kt">string</span> <span class="n">Message</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>And then tried to implement a command handler for it:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">public</span> <span class="k">class</span> <span class="nc">EchoHandler</span> <span class="p">:</span> <span class="n">ICommandHandler</span><span class="p">&lt;</span><span class="n">Echo</span><span class="p">&gt;</span>
+<span class="p">{</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>the compiler would immediately complain about various contraints and interfaces 
+that aren’t satisfied due to the requirements on the <code class="language-plaintext highlighter-rouge">Echo</code> type itself. For 
+a seasoned <em>Merq</em> developer, this is a no-brainer, but for new developers, 
+it can be a bit puzzling:</p>
+
+<p><img src="https://raw.githubusercontent.com/devlooped/Merq/main/assets/img/command-interfaces.png" alt="compiler warnings screenshot" /></p>
+
+<p>A code fix is provided to automatically implement the required interfaces 
+in this case:</p>
+
+<p><img src="https://raw.githubusercontent.com/devlooped/Merq/main/assets/img/implement-icommand.png" alt="code fix to implement ICommand screenshot" /></p>
+
+<p>Likewise, if a consumer attempted to invoke the above <code class="language-plaintext highlighter-rouge">Echo</code> command asynchronously 
+(known as the <a href="https://devblogs.microsoft.com/pfxteam/should-i-expose-asynchronous-wrappers-for-synchronous-methods/">async over sync anti-pattern</a>), 
+they would get a somewhat unintuitive compiler error:</p>
+
+<p><img src="https://raw.githubusercontent.com/devlooped/Merq/main/assets/img/async-sync-command.png" alt="error executing sync command as async" /></p>
+
+<p>But the second error is more helpful, since it points to the actual problem, 
+and a code fix can be applied to resolve it:</p>
+
+<p><img src="https://raw.githubusercontent.com/devlooped/Merq/main/assets/img/async-sync-command-fix.png" alt="code fix for executing sync command as async" /></p>
+
+<p>The same analyzers and code fixes are provided for the opposite anti-pattern, 
+known as <a href="https://devblogs.microsoft.com/pfxteam/should-i-expose-synchronous-wrappers-for-asynchronous-methods/">sync over async</a>, 
+where a synchronous command is executed asynchronously.</p>
+
+<!-- #core -->
+
+<h2 id="message-bus">Message Bus</h2>
+
+<p>The default implementation lives in a separate package <a href="https://www.nuget.org/packages/Merq.Core">Merq.Core</a> 
+so that application components can take a dependency on just the interfaces.</p>
+
+<p><a href="https://www.nuget.org/packages/Merq.Core"><img src="https://img.shields.io/nuget/vpre/Merq.Core.svg?color=royalblue" alt="Version" /></a>
+<a href="https://www.nuget.org/packages/Merq.Core"><img src="https://img.shields.io/nuget/dt/Merq.Core.svg?color=green" alt="Downloads" /></a></p>
+
+<!-- #implementation -->
+<p>The default implementation of the message bus interface <code class="language-plaintext highlighter-rouge">IMessageBus</code> has 
+no external dependencies and can be instantiated via the <code class="language-plaintext highlighter-rouge">MessageBus</code> constructor 
+directly.</p>
+
+<p>The bus locates command handlers and event producers via the passed-in 
+<code class="language-plaintext highlighter-rouge">IServiceProvider</code> instance in the constructor:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">bus</span> <span class="p">=</span> <span class="k">new</span> <span class="nf">MessageBus</span><span class="p">(</span><span class="n">serviceProvider</span><span class="p">);</span>
+
+<span class="c1">// execute a command</span>
+<span class="n">bus</span><span class="p">.</span><span class="nf">Execute</span><span class="p">(</span><span class="k">new</span> <span class="nf">MyCommand</span><span class="p">());</span>
+
+<span class="c1">// observe an event from the bus</span>
+<span class="n">bus</span><span class="p">.</span><span class="n">Observe</span><span class="p">&lt;</span><span class="n">MyEvent</span><span class="p">&gt;().</span><span class="nf">Subscribe</span><span class="p">(</span><span class="n">e</span> <span class="p">=&gt;</span> <span class="n">Console</span><span class="p">.</span><span class="nf">WriteLine</span><span class="p">(</span><span class="n">e</span><span class="p">.</span><span class="n">Message</span><span class="p">));</span>
+</code></pre></div></div>
+
+<!-- #implementation -->
+
+<p>When using <a href="https://learn.microsoft.com/en-us/dotnet/core/extensions/dependency-injection">dependency injection for .NET</a>, 
+the <a href="https://www.nuget.org/packages/Merq.DependencyInjection">Merq.DependencyInjection</a> package 
+provides a simple mechanism for registering the message bus:</p>
+
+<!-- #di -->
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">var</span> <span class="n">builder</span> <span class="p">=</span> <span class="n">WebApplication</span><span class="p">.</span><span class="nf">CreateBuilder</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+<span class="p">...</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="nf">AddMessageBus</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>All command handlers and event producers need to be registered with the 
+services collection as usual, using the main interface for the component, 
+such as <code class="language-plaintext highlighter-rouge">ICommandHandler&lt;T&gt;</code> and <code class="language-plaintext highlighter-rouge">IObservable&lt;TEvent&gt;</code>.</p>
+
+<blockquote>
+  <p>NOTE: <em>Merq</em> makes no assumptions about the lifetime of the registered 
+components, so it’s up to the consumer to register them with the desired
+lifetime.</p>
+</blockquote>
+
+<p>To drastically simplify registration of handlers and producers, we 
+recommend the <a href="https://www.nuget.org/packages/Devlooped.Extensions.DependencyInjection.Attributed/">Devlooped.Extensions.DependencyInjection.Attributed</a>.
+package, which provides a simple attribute-based mechanism for automatically 
+emitting at compile-time the required service registrations for all types 
+marked with the provided <code class="language-plaintext highlighter-rouge">[Service]</code> attribute, which also allows setting the 
+component lifetime, such as <code class="language-plaintext highlighter-rouge">[Service(ServiceLifetime.Transient)]</code> (default 
+lifetime is <code class="language-plaintext highlighter-rouge">ServiceLifetime.Singleton</code> for this source generator-based 
+package).</p>
+
+<p>This allows to simply mark all command handlers and event producers as 
+<code class="language-plaintext highlighter-rouge">[Service]</code> and then register them all with a single line of code:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="nf">AddServices</span><span class="p">();</span>
+</code></pre></div></div>
+
+<h3 id="telemetry-and-monitoring">Telemetry and Monitoring</h3>
+
+<p>The core implementation of the <code class="language-plaintext highlighter-rouge">IMessageBus</code> is instrumented with <code class="language-plaintext highlighter-rouge">ActivitySource</code> and 
+<code class="language-plaintext highlighter-rouge">Metric</code>, providing out of the box support for <a href="https://learn.microsoft.com/en-us/dotnet/core/diagnostics/distributed-tracing-instrumentation-walkthroughs">Open Telemetry</a>-based monitoring, as well 
+as via <a href="https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace">dotnet trace</a> 
+and <a href="https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters">dotnet counters</a>.</p>
+
+<p>To export telemetry using <a href="https://learn.microsoft.com/en-us/dotnet/core/diagnostics/distributed-tracing-instrumentation-walkthroughs">Open Telemetry</a>, 
+for example:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">using</span> <span class="nn">var</span> <span class="n">tracer</span> <span class="p">=</span> <span class="n">Sdk</span>
+    <span class="p">.</span><span class="nf">CreateTracerProviderBuilder</span><span class="p">()</span>
+    <span class="p">.</span><span class="nf">SetResourceBuilder</span><span class="p">(</span><span class="n">ResourceBuilder</span><span class="p">.</span><span class="nf">CreateDefault</span><span class="p">().</span><span class="nf">AddService</span><span class="p">(</span><span class="s">"ConsoleApp"</span><span class="p">))</span>
+    <span class="p">.</span><span class="nf">AddSource</span><span class="p">(</span><span class="n">source</span><span class="p">.</span><span class="n">Name</span><span class="p">)</span>
+    <span class="p">.</span><span class="nf">AddSource</span><span class="p">(</span><span class="s">"Merq"</span><span class="p">)</span>
+    <span class="p">.</span><span class="nf">AddConsoleExporter</span><span class="p">()</span>
+    <span class="p">.</span><span class="nf">AddZipkinExporter</span><span class="p">()</span>
+    <span class="p">.</span><span class="nf">AddAzureMonitorTraceExporter</span><span class="p">(</span><span class="n">o</span> <span class="p">=&gt;</span> <span class="n">o</span><span class="p">.</span><span class="n">ConnectionString</span> <span class="p">=</span> <span class="n">config</span><span class="p">[</span><span class="s">"AppInsights"</span><span class="p">])</span>
+    <span class="p">.</span><span class="nf">Build</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p>Collecting traces via <a href="https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-trace">dotnet-trace</a>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dotnet trace collect <span class="nt">--name</span> <span class="o">[</span>PROCESS_NAME] <span class="nt">--providers</span><span class="o">=</span><span class="s2">"Microsoft-Diagnostics-DiagnosticSource:::FilterAndPayloadSpecs=[AS]Merq,System.Diagnostics.Metrics:::Metrics=Merq"</span>
+</code></pre></div></div>
+
+<p>Monitoring metrics via <a href="https://learn.microsoft.com/en-us/dotnet/core/diagnostics/dotnet-counters">dotnet-counters</a>:</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>dotnet counters monitor <span class="nt">--process-id</span> <span class="o">[</span>PROCESS_ID] <span class="nt">--counters</span> Merq
+</code></pre></div></div>
+
+<p>Example rendering from the included sample console app:</p>
+
+<p><img src="https://raw.githubusercontent.com/devlooped/Merq/main/assets/img/dotnet-counters.png" alt="dotnet-counters screenshot" /></p>
+
+<h2 id="duck-typing-support">Duck Typing Support</h2>
+
+<!-- #duck -->
+<p>Being able to loosely couple both events (and their consumers) and command execution (from their 
+command handler implementations) is a key feature of Merq. To take this decoupling to the extreme, 
+Merq allows a similar capability as allowed by the TypeScript/JavaScript in VSCode: you can just 
+copy/paste an event/command definition as <em>source</em> into your assembly, and perform the regular 
+operations with it (like <code class="language-plaintext highlighter-rouge">Observe</code> an event and <code class="language-plaintext highlighter-rouge">Execute</code> a command), in a “duck typing” manner.</p>
+
+<p>As long as the types’ full name match, the conversion will happen automatically. Since this 
+functionality isn’t required in many scenarios, and since there are a myriad ways to implement 
+such an object mapping functionality, the <code class="language-plaintext highlighter-rouge">Merq.Core</code> package only provides the hooks to enable 
+this, but does not provide any built-in implementation for it. In other words, no duck typing 
+is performed by default.</p>
+
+<p>The <a href="https://www.nuget.org/packages/Merq.AutoMapper">Merq.AutoMapper</a> package provides one such 
+implementation, based on the excelent <a href="https://automapper.org/">AutoMapper</a> library. It can be 
+registered with the DI container as follows:</p>
+
+<div class="language-csharp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="n">AddMessageBus</span><span class="p">&lt;</span><span class="n">AutoMapperMessageBus</span><span class="p">&gt;();</span>
+<span class="c1">// register all services, including handlers and producers</span>
+<span class="n">builder</span><span class="p">.</span><span class="n">Services</span><span class="p">.</span><span class="nf">AddServices</span><span class="p">();</span>
+</code></pre></div></div>
+
+<!-- #duck -->
+
+<!-- #ci -->
+
+<h1 id="dogfooding">Dogfooding</h1>
+
+<p><a href="https://pkg.kzu.dev/index.json"><img src="https://img.shields.io/endpoint?url=https://shields.kzu.dev/vpre/Devlooped.Merq/main&amp;label=nuget.ci&amp;color=brightgreen" alt="CI Version" /></a>
+<a href="https://github.com/devlooped/Merq/actions"><img src="https://github.com/devlooped/Merq/workflows/build/badge.svg?branch=main" alt="Build" /></a></p>
+
+<p>We also produce CI packages from branches and pull requests so you can dogfood builds as quickly as they are produced.</p>
+
+<p>The CI feed is <code class="language-plaintext highlighter-rouge">https://pkg.kzu.dev/index.json</code>.</p>
+
+<p>The versioning scheme for packages is:</p>
+
+<ul>
+  <li>PR builds: <em>42.42.42-pr</em><code class="language-plaintext highlighter-rouge">[NUMBER]</code></li>
+  <li>Branch builds: <em>42.42.42-</em><code class="language-plaintext highlighter-rouge">[BRANCH]</code>.<code class="language-plaintext highlighter-rouge">[COMMITS]</code></li>
+</ul>
+
+<!-- #sponsors -->
+<!-- include https://github.com/devlooped/sponsors/raw/main/footer.md -->
+<h1 id="sponsors">Sponsors</h1>
+
+<!-- sponsors.md -->
+<p><a href="https://github.com/clarius"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/clarius.png" alt="Clarius Org" title="Clarius Org" /></a>
+<a href="https://github.com/KirillOsenkov"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/KirillOsenkov.png" alt="Kirill Osenkov" title="Kirill Osenkov" /></a>
+<a href="https://github.com/MFB-Technologies-Inc"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/MFB-Technologies-Inc.png" alt="MFB Technologies, Inc." title="MFB Technologies, Inc." /></a>
+<a href="https://github.com/decriptor"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/decriptor.png" alt="Stephen Shaw" title="Stephen Shaw" /></a>
+<a href="https://github.com/torutek-gh"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/torutek-gh.png" alt="Torutek" title="Torutek" /></a>
+<a href="https://github.com/drivenet"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/drivenet.png" alt="DRIVE.NET, Inc." title="DRIVE.NET, Inc." /></a>
+<a href="https://github.com/dgnaegi"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/dgnaegi.png" alt="Daniel Gnägi" title="Daniel Gnägi" /></a>
+<a href="https://github.com/AshleyMedway"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/AshleyMedway.png" alt="Ashley Medway" title="Ashley Medway" /></a>
+<a href="https://github.com/Keflon"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/Keflon.png" alt="Keith Pickford" title="Keith Pickford" /></a>
+<a href="https://github.com/tbolon"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/tbolon.png" alt="Thomas Bolon" title="Thomas Bolon" /></a>
+<a href="https://github.com/kfrancis"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/kfrancis.png" alt="Kori Francis" title="Kori Francis" /></a>
+<a href="https://github.com/twenzel"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/twenzel.png" alt="Toni Wenzel" title="Toni Wenzel" /></a>
+<a href="https://github.com/Giorgi"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/Giorgi.png" alt="Giorgi Dalakishvili" title="Giorgi Dalakishvili" /></a>
+<a href="https://github.com/MikeCodesDotNET"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/MikeCodesDotNET.png" alt="Mike James" title="Mike James" /></a>
+<a href="https://github.com/dansiegel"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/dansiegel.png" alt="Dan Siegel" title="Dan Siegel" /></a>
+<a href="https://github.com/rbnswartz"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/rbnswartz.png" alt="Reuben Swartz" title="Reuben Swartz" /></a>
+<a href="https://github.com/jfoshee"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/jfoshee.png" alt="Jacob Foshee" title="Jacob Foshee" /></a>
+<a href="https://github.com/eajhnsn1"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/Mrxx99.png" alt="" title="&quot;)](https://github.com/Mrxx99)
+[![Eric Johnson](https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/eajhnsn1.png &quot;Eric Johnson" /></a>
+<a href="https://github.com/mackayn"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/mackayn.png" alt="Norman Mackay" title="Norman Mackay" /></a>
+<a href="https://github.com/certifytheweb"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/certifytheweb.png" alt="Certify The Web" title="Certify The Web" /></a>
+<a href="https://github.com/IxTechnologies"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/IxTechnologies.png" alt="Ix Technologies B.V." title="Ix Technologies B.V." /></a>
+<a href="https://github.com/davidjenni"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/davidjenni.png" alt="David JENNI" title="David JENNI" /></a>
+<a href="https://github.com/Jonathan-Hickey"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/Jonathan-Hickey.png" alt="Jonathan " title="Jonathan " /></a>
+<a href="https://github.com/okyrylchuk"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/okyrylchuk.png" alt="Oleg Kyrylchuk" title="Oleg Kyrylchuk" /></a>
+<a href="https://github.com/akunzai"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/akunzai.png" alt="Charley Wu" title="Charley Wu" /></a>
+<a href="https://github.com/jakobt"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/jakobt.png" alt="Jakob Tikjøb Andersen" title="Jakob Tikjøb Andersen" /></a>
+<a href="https://github.com/seanalexander"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/seanalexander.png" alt="Seann Alexander" title="Seann Alexander" /></a>
+<a href="https://github.com/tinohager"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/tinohager.png" alt="Tino Hager" title="Tino Hager" /></a>
+<a href="https://github.com/ploeh"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/ploeh.png" alt="Mark Seemann" title="Mark Seemann" /></a>
+<a href="https://github.com/angelobelchior"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/angelobelchior.png" alt="Angelo Belchior" title="Angelo Belchior" /></a>
+<a href="https://github.com/KenBonny"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/KenBonny.png" alt="Ken Bonny" title="Ken Bonny" /></a>
+<a href="https://github.com/SimonCropp"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/SimonCropp.png" alt="Simon Cropp" title="Simon Cropp" /></a>
+<a href="https://github.com/agileworks-eu"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/agileworks-eu.png" alt="agileworks-eu" title="agileworks-eu" /></a>
+<a href="https://github.com/arsdragonfly"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/sorahex.png" alt="" title="&quot;)](https://github.com/sorahex)
+[![Zheyu Shen](https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/arsdragonfly.png &quot;Zheyu Shen" /></a>
+<a href="https://github.com/vezel-dev"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/.github/avatars/vezel-dev.png" alt="Vezel" title="Vezel" /></a></p>
+
+<!-- sponsors.md -->
+
+<p><a href="https://github.com/sponsors/devlooped"><img src="https://raw.githubusercontent.com/devlooped/sponsors/main/sponsor.png" alt="Sponsor this project" title="Sponsor this project" /></a>
+ </p>
+
+<p><a href="https://github.com/sponsors">Learn more about GitHub Sponsors</a></p>
+
+<!-- https://github.com/devlooped/sponsors/raw/main/footer.md -->
+
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        
+        <p class="copyright">Merq maintained by <a href="https://github.com/devlooped">devlooped</a></p>
+        
+        <p>Published with <a href="https://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+  </body>
+</html>
